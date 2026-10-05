@@ -16,7 +16,6 @@ const DUR = totalBars * BAR + 1.5;
 const N = Math.ceil(DUR * SR);
 const L = new Float32Array(N);
 const R = new Float32Array(N);
-const userTrack = T.lightningTrack.enabled;
 
 // Deterministic noise, so every render sounds identical.
 let seed = 0x2b7e1516;
@@ -213,115 +212,99 @@ function shimmer(t, g = 1, dur = 3.4) {
   });
 }
 
-// ---- Harmony: Am – F – C – G ----------------------------------------------
+// ---- Instruments for the dark mix -------------------------------------------
+function arp(t, freq, g = 1, cutoff = 0.12, pan = 0) {
+  // A filtered saw pluck: the neon-synth sixteenth line.
+  let ph = 0;
+  let lp = 0;
+  add(t, 0.22, (x) => {
+    ph += freq / SR;
+    const saw = 2 * (ph % 1) - 1;
+    lp += (cutoff + 0.25 * Math.exp(-x * 30)) * (saw - lp);
+    return lp * Math.exp(-x * 14) * 0.32;
+  }, g, pan);
+}
+function sub(t, dur, freq, g = 1) {
+  add(t, dur, (x) => Math.sin(2 * Math.PI * freq * x) * Math.min(1, x * 40) * Math.min(1, (dur - x) * 12) * 0.5, g);
+}
+function blip(t, g = 1, freq = 1760) {
+  add(t, 0.09, (x) => Math.sin(2 * Math.PI * freq * x) * Math.exp(-x * 40) * 0.25, g, 0.2);
+}
+
+// ---- Harmony: Am – F – Dm – E (harmonic minor, a little tension) -----------
 const PROG = [
   { root: 45, chord: [57, 60, 64] }, // Am
   { root: 41, chord: [57, 60, 65] }, // F
-  { root: 48, chord: [55, 60, 64] }, // C
-  { root: 43, chord: [55, 59, 62] }, // G
+  { root: 38, chord: [57, 62, 65] }, // Dm
+  { root: 40, chord: [56, 59, 64] }, // E
 ];
 
-// ---- Arrangement ------------------------------------------------------------
-const grooveSecs = ['what', 'taproot', 'legacy', 'payswap', 'portalShots', 'portalCta'];
-const dropSecs = ['portalTitle'];
+// Energy per section: 0 silent, 1 ambient, 2 half-time groove, 3 driving.
+const ENERGY = {
+  intro: 1, route: 2, legacy: 2, better: 0, taproot: 3, payswap: 2, market: 3,
+  portal: 2, deploy: 2, backend: 2, wallet: 2, router: 3, cta: 2, thanks: 1, lightning: 1, outro: 1,
+};
 
+// ---- Arrangement ------------------------------------------------------------
 for (let b = 0; b < totalBars; b++) {
   const sec = sectionOf(b);
+  const e = ENERGY[sec] ?? 1;
   const t0 = barT(b);
   const ch = PROG[b % 4];
-  const finale = ['reel', 'soon', 'end'].includes(sec);
-  if (finale && userTrack) continue;
+  const next = sectionOf(b + 1);
+  const lastOfSec = next !== sec;
+  const isEnd = sec === 'outro';
+  const fadeK = isEnd ? Math.max(0, 1 - (b - S.outro[0]) / (S.outro[1] - S.outro[0])) : 1;
 
-  if (sec === 'intro') {
-    pad(t0, BAR + 0.1, ch.chord.map(hz), 1, 0.03);
-    bass(t0, BAR, hz(ch.root - 12), 0.5);
-    for (let i = 0; i < 8; i++) hat(t0 + i * BEAT / 2, b >= 2 ? 0.6 : 0.3);
-    if (b === S.intro[1] - 1) riser(t0, BAR, 0.9);
+  if (sec === 'better') {
+    // A held breath: just a low drone and a swell into Taproot.
+    pad(t0, BAR + 0.1, [hz(45), hz(52)], 0.8, 0.012);
+    if (lastOfSec) swell(t0 + BAR / 2, BAR / 2, 1);
+    continue;
   }
 
-  if (grooveSecs.includes(sec) || dropSecs.includes(sec)) {
-    const drop = dropSecs.includes(sec);
-    pad(t0, BAR + 0.1, ch.chord.map(hz), drop ? 1 : 0.8, drop ? 0.09 : 0.05);
+  pad(t0, BAR + 0.1, ch.chord.map(hz), (e >= 3 ? 0.9 : 0.75) * fadeK, e >= 3 ? 0.05 : 0.025);
+  sub(t0, BAR, hz(ch.root - 12), (e >= 2 ? 0.9 : 0.6) * fadeK);
+
+  // The arp: sixteenths over the chord, opening up with energy.
+  if (e >= 1) {
+    const notes = [ch.chord[0], ch.chord[1], ch.chord[2], ch.chord[0] + 12];
+    const steps = e >= 2 ? 16 : 8;
+    for (let i = 0; i < steps; i++) {
+      const n = notes[[0, 2, 1, 3, 2, 1, 3, 2][i % 8]] + 12;
+      arp(t0 + i * (BAR / steps), hz(n), (e >= 3 ? 0.8 : e === 2 ? 0.6 : 0.4) * fadeK, e >= 3 ? 0.14 : 0.08, i % 2 ? 0.35 : -0.35);
+    }
+  }
+
+  if (e === 2) {
+    // Half time: kick on 1 and the "and" of 2, snare on 3.
+    kick(t0, 1); kick(t0 + BEAT * 1.5, 0.7);
+    snare(t0 + BEAT * 2, 0.8);
+    for (let i = 0; i < 8; i++) hat(t0 + i * BEAT / 2, i % 2 ? 0.35 : 0.55);
+  }
+  if (e >= 3) {
     for (let i = 0; i < 4; i++) kick(t0 + i * BEAT, 1);
-    if (drop) kick(t0 + 3.5 * BEAT, 0.7);
-    snare(t0 + BEAT, 0.9); snare(t0 + 3 * BEAT, 0.9);
-    if (drop) { clap(t0 + BEAT); clap(t0 + 3 * BEAT); }
-    for (let i = 0; i < (drop ? 16 : 8); i++) {
-      const step = drop ? BEAT / 4 : BEAT / 2;
-      hat(t0 + i * step, (i % 2 ? 0.45 : 0.7), !drop && i % 4 === 2);
-    }
-    bass(t0, BEAT * 1.5, hz(ch.root - 12), 1);
-    bass(t0 + BEAT * 2, BEAT * 1.5, hz(ch.root - 12), 0.9);
-    bass(t0 + BEAT * 3.5, BEAT * 0.5, hz(ch.root), 0.6);
-    if (drop || sec === 'portalShots') {
-      const notes = [...ch.chord, ch.chord[0] + 12];
-      for (let i = 0; i < 8; i++) pluck(t0 + i * BEAT / 2, hz(notes[[0, 1, 2, 3, 2, 1, 2, 3][i]] + 12), drop ? 0.9 : 0.55, i % 2 ? 0.3 : -0.3);
-    }
-    // Lift into each new section.
-    const next = sectionOf(b + 1);
-    if (next !== sec && next) {
-      if (next === 'portalTitle') riser(t0, BAR, 1.1);
-      else if (next !== 'oneMore') for (let i = 0; i < 4; i++) snare(t0 + 3 * BEAT + i * BEAT / 4, 0.25 + i * 0.12);
-    }
+    snare(t0 + BEAT, 0.8); snare(t0 + 3 * BEAT, 0.8);
+    clap(t0 + BEAT, 0.6); clap(t0 + 3 * BEAT, 0.6);
+    for (let i = 0; i < 16; i++) hat(t0 + i * BEAT / 4, i % 4 === 2 ? 0.6 : 0.35, i % 8 === 6);
+    bass(t0 + BEAT * 0.5, BEAT * 0.4, hz(ch.root), 0.45);
+    bass(t0 + BEAT * 2.5, BEAT * 0.4, hz(ch.root), 0.45);
   }
+  if (sec === 'thanks' || sec === 'lightning') for (let i = 0; i < 4; i++) hat(t0 + i * BEAT, 0.3);
+  if (sec === 'lightning') heartbeat(t0, 0.7);
 
-  if (sec === 'oneMore') {
-    pad(t0, BAR + 0.1, [hz(45), hz(52)], 0.9, 0.015);
-    heartbeat(t0, 0.9); heartbeat(t0 + 2 * BEAT, 0.9);
-    riser(t0 + BAR / 2, BAR / 2, 0.7);
-  }
-
-  if (sec === 'reel') {
-    const k = b - S.reel[0];
-    pad(t0, BAR + 0.1, [hz(45), hz(52), hz(57)], 0.7 + k * 0.08, 0.02 + k * 0.01);
-    for (let i = 0; i < 4; i++) kick(t0 + i * BEAT, 0.5 + k * 0.1);
-    for (let i = 0; i < (k ? 16 : 8); i++) hat(t0 + i * BEAT / (k ? 4 : 2), 0.5);
-    if (k >= 1) { snare(t0 + BEAT, 0.7); snare(t0 + 3 * BEAT, 0.7); }
-    if (b === S.reel[1] - 1) riser(t0, BAR, 1.2);
-  }
-
-  if (sec === 'soon' || sec === 'end') {
-    const fadeK = sec === 'end' ? Math.max(0, 1 - (b - S.end[0]) / (S.end[1] - S.end[0])) : 1;
-    pad(t0, BAR + 0.1, ch.chord.map(hz), fadeK, 0.12);
-    for (let i = 0; i < 4; i++) kick(t0 + i * BEAT, fadeK);
-    snare(t0 + BEAT, fadeK); snare(t0 + 3 * BEAT, fadeK);
-    clap(t0 + BEAT, fadeK); clap(t0 + 3 * BEAT, fadeK);
-    for (let i = 0; i < 16; i++) hat(t0 + i * BEAT / 4, 0.5 * fadeK);
-    bass(t0, BEAT * 2, hz(ch.root - 12), fadeK);
-    bass(t0 + BEAT * 2, BEAT * 2, hz(ch.root - 12), fadeK);
+  // Lift into the next section.
+  if (lastOfSec && next && next !== 'better') {
+    if ((ENERGY[next] ?? 1) >= 3) riser(t0, BAR, 0.9);
+    else if (e >= 2) for (let i = 0; i < 4; i++) snare(t0 + 3 * BEAT + i * BEAT / 4, 0.2 + i * 0.1);
   }
 }
 
-// Section hits.
-impact(barT(S.portalTitle[0]), 0.5);
-impact(barT(S.end[1]) - BAR * 0.02, 0); // keeps the tail allocated
-
-// ---- Slot machine SFX (always on, over either music) -----------------------
-const fps = T.fps;
-const reel0 = barT(S.reel[0]);
-const fr = (f) => reel0 + f / fps;
-const RC = T.reel;
-const letters = RC.words.join('').length;
-const lastLock = RC.firstLock + (letters - 1) * RC.lockEvery;
-// Lever ratchet.
-for (let i = 0; i < 6; i++) tick(fr(RC.leverFrame) + i * 0.03, 0.9, 900 + i * 120);
-thunk(fr(RC.leverFrame + 10), 1, 0.6);
-// Spinning clatter, thinning out as reels lock.
-for (let f = RC.spinStart; f < lastLock; f += 2) {
-  const locked = Math.max(0, Math.floor((f - RC.firstLock) / RC.lockEvery) + 1);
-  const left = (letters - Math.min(letters, locked)) / letters;
-  if (left > 0) tick(fr(f), 0.25 + 0.35 * left, 2500 + 300 * rnd());
-}
-for (let i = 0; i < letters; i++) thunk(fr(RC.firstLock + i * RC.lockEvery), 0.9, 1 + i * 0.06);
-// The reveal: a rush into the last letter, then thunder and a blooming chord.
-swell(fr(lastLock) - 0.8, 0.8, 0.9);
-thunder(fr(lastLock + 6), 1, 3);
-shimmer(fr(lastLock + 6), 1);
-// The stamp lands: a heavy thud and a slap.
-const stampAt = barT(S.soon[0]);
-impact(stampAt, userTrack ? 0.6 : 1);
-thunk(stampAt, 1.2, 0.45);
-clap(stampAt, 1);
+// Downbeat hits on the big turns.
+for (const name of ['taproot', 'market', 'portal', 'router']) impact(barT(S[name][0]), 0.7);
+thunder(barT(S.lightning[0]) + BEAT, 0.45, 4);
+shimmer(barT(S.outro[0]), 0.5);
+impact(barT(S.outro[1]) - BAR * 0.02, 0); // keeps the tail allocated
 
 // ---- Sidechain duck, master, write -----------------------------------------
 const duck = new Float32Array(N).fill(1);
@@ -351,4 +334,4 @@ for (let i = 0; i < N; i++) {
 }
 mkdirSync(join(root, 'public/audio'), { recursive: true });
 writeFileSync(join(root, 'public/audio/score.wav'), buf);
-console.log(`score.wav: ${DUR.toFixed(1)}s, ${totalBars} bars @ ${T.bpm} BPM${userTrack ? ' (finale left to the lightning track)' : ''}`);
+console.log(`score.wav: ${DUR.toFixed(1)}s, ${totalBars} bars @ ${T.bpm} BPM`);

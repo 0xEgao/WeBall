@@ -1,28 +1,29 @@
-import { loadFont as loadFredoka } from '@remotion/google-fonts/Fredoka';
-import { loadFont as loadNunito } from '@remotion/google-fonts/NunitoSans';
+import { loadFont as loadSpace } from '@remotion/google-fonts/SpaceMono';
 import { loadFont as loadPlex } from '@remotion/google-fonts/IBMPlexMono';
+import { loadFont as loadJet } from '@remotion/google-fonts/JetBrainsMono';
 import timeline from './timeline.json';
 
-export const DISPLAY = loadFredoka('normal', { weights: ['500', '600', '700'], subsets: ['latin'] }).fontFamily;
-export const BODY = loadNunito('normal', { weights: ['400', '600', '700'], subsets: ['latin'] }).fontFamily;
+// Portal's own type: Space Mono headers, IBM Plex Mono body, JetBrains Mono numbers.
+export const HEAD = loadSpace('normal', { weights: ['400', '700'], subsets: ['latin'] }).fontFamily;
 export const MONO = loadPlex('normal', { weights: ['400', '500', '600'], subsets: ['latin'] }).fontFamily;
+export const NUM = loadJet('normal', { weights: ['400', '500', '700', '800'], subsets: ['latin'] }).fontFamily;
 
-// openswap.live, day theme.
+// Portal design tokens (portal/src/index.css).
 export const C = {
-  paper: '#f7f2e8',
-  paperDeep: '#ede4d3',
-  card: '#fbf8f1',
-  ink: '#111111',
-  ink70: 'rgba(17,17,17,0.7)',
-  ink45: 'rgba(17,17,17,0.45)',
-  ink12: 'rgba(17,17,17,0.12)',
-  line: 'rgba(17,17,17,0.055)',
-  // Night accents, held back for the finale.
+  bg: '#0b0e13',
+  surface: '#121722',
+  raised: '#171d2a',
+  line: 'rgba(255,255,255,0.08)',
+  lineStrong: 'rgba(255,255,255,0.16)',
+  fg: '#f4f6fa',
+  muted: '#a2a9b8',
+  subtle: '#72798a',
+  azure: '#36abfc',
+  violet: '#b990ff',
+  green: '#31d158',
+  amber: '#f5c451',
+  red: '#ff5a5f',
   orange: '#f7931a',
-  green: '#00c853',
-  amber: '#fbbf24',
-  blue: '#3b82f6',
-  night: '#050505',
 };
 
 export const T = timeline;

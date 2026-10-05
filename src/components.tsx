@@ -1,138 +1,157 @@
 import React from 'react';
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig, Easing } from 'remotion';
-import { BEAT, BODY, C, DISPLAY, MONO } from './theme';
+import { AbsoluteFill, Easing, interpolate, random, useCurrentFrame } from 'remotion';
+import { BEAT, C, HEAD, MONO } from './theme';
 
 export const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
+export const easeOut = Easing.out(Easing.cubic);
+export const easeInOut = Easing.inOut(Easing.cubic);
+
+/** 0→1 over `len` frames starting at `at`, eased. */
+export const useProgress = (at: number, len = 14, easing = easeOut) => {
+  const frame = useCurrentFrame();
+  return interpolate(frame, [at, at + len], [0, 1], { ...clamp, easing });
+};
 
 /** 1 on the beat, decaying to 0 before the next one. */
-export const useBeat = (offset = 0) => {
-  const f = useCurrentFrame() - offset;
-  const phase = ((f % BEAT) + BEAT) % BEAT;
-  return Math.exp(-phase / 3.2);
+export const useBeat = () => {
+  const f = useCurrentFrame();
+  return Math.exp(-(((f % BEAT) + BEAT) % BEAT) / 3.2);
 };
 
-export const useSpring = (delay = 0, config: Parameters<typeof spring>[0]['config'] = { damping: 14, mass: 0.8 }) => {
+/** Dark field with a fine grid, drifting scan lines, faint glows and grain. */
+export const Backdrop: React.FC<{ accent?: string; children?: React.ReactNode; grid?: number }> = ({ accent = C.azure, children, grid = 1 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  return spring({ frame: frame - delay, fps, config });
-};
-
-/** The site's cream drafting paper. */
-export const Paper: React.FC<{ drift?: boolean; children?: React.ReactNode }> = ({ drift = true, children }) => {
-  const frame = useCurrentFrame();
-  const shift = drift ? (frame * 0.35) % 144 : 0;
+  const drift = (frame * 0.4) % 80;
   return (
-    <AbsoluteFill
-      style={{
-        background: `radial-gradient(circle at 14% 12%, rgba(0,0,0,0.05), transparent 30%),
-          linear-gradient(180deg, #f8f3e9 0%, #f3ecdf 48%, #ede4d3 100%)`,
-      }}
-    >
+    <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
       <AbsoluteFill
         style={{
-          backgroundImage: `linear-gradient(${C.line} 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.045) 1px, transparent 1px),
-            linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)`,
-          backgroundSize: '36px 36px, 36px 36px, 144px 144px, 144px 144px',
-          backgroundPosition: `${shift}px ${shift}px, ${shift}px ${shift}px, ${shift - 1}px ${shift - 1}px, ${shift - 1}px ${shift - 1}px`,
-          opacity: 0.55,
+          background: `radial-gradient(ellipse at 12% 8%, ${accent}1f, transparent 45%), radial-gradient(ellipse at 90% 100%, ${C.violet}14, transparent 50%)`,
         }}
       />
-      <AbsoluteFill style={{ boxShadow: 'inset 0 0 260px rgba(80,60,20,0.16)' }} />
+      <AbsoluteFill
+        style={{
+          opacity: grid,
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)`,
+          backgroundSize: '80px 80px',
+          backgroundPosition: `0 ${drift}px, 0 ${drift}px`,
+          maskImage: 'radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%)',
+        }}
+      />
+      {[0, 1, 2].map((k) => {
+        const y = ((frame * (1.2 + k * 0.5) + k * 380) % 1400) - 160;
+        return (
+          <div
+            key={k}
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: y,
+              height: 1,
+              background: `linear-gradient(90deg, transparent, ${k === 1 ? C.violet : accent}55, transparent)`,
+            }}
+          />
+        );
+      })}
       {children}
+      <Grain />
+      <AbsoluteFill style={{ boxShadow: 'inset 0 0 280px rgba(0,0,0,0.75)', pointerEvents: 'none' }} />
     </AbsoluteFill>
   );
 };
 
-/** The yin-yang mark from openswap-bw.svg, drawn inline so it can spin. */
-export const Logo: React.FC<{ size: number; rotate?: number; invert?: boolean; style?: React.CSSProperties }> = ({
-  size,
-  rotate = 0,
-  invert = false,
-  style,
-}) => {
-  const a = invert ? '#000000' : '#ffffff';
-  const b = invert ? '#ffffff' : '#000000';
+export const Grain: React.FC<{ opacity?: number }> = ({ opacity = 0.05 }) => {
+  const frame = useCurrentFrame();
+  const id = `grain${frame % 6}`;
   return (
-    <svg width={size} height={size} viewBox="0 0 960 960" style={{ transform: `rotate(${rotate}deg)`, ...style }}>
-      <circle cx="479.5" cy="479.5" r="467.5" fill={a} />
-      <path
-        fill={b}
-        d="M 479.5 12 A 467.5 467.5 0 0 1 479.5 947 L 479.5 935.8 A 228.3 228.3 0 0 1 479.5 479.2 L 479.5 479.8 A 228.3 228.3 0 0 0 479.5 23.2 L 479.5 12 Z"
-      />
-      <circle cx="479.5" cy="251.5" r="59.75" fill={b} />
-      <circle cx="479.5" cy="707.5" r="59.75" fill={a} />
-      <circle cx="479.5" cy="479.5" r="461.5" fill="none" stroke={b} strokeWidth="12" />
-    </svg>
+    <AbsoluteFill style={{ opacity, mixBlendMode: 'screen', pointerEvents: 'none' }}>
+      <svg width="100%" height="100%">
+        <filter id={id}>
+          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed={frame % 6} />
+        </filter>
+        <rect width="100%" height="100%" filter={`url(#${id})`} />
+      </svg>
+    </AbsoluteFill>
   );
 };
 
-/** Words rise in one by one from behind a mask. */
-export const Rise: React.FC<{
-  text: string;
-  delay?: number;
-  stagger?: number;
-  style?: React.CSSProperties;
-  wordStyle?: (i: number) => React.CSSProperties;
-}> = ({ text, delay = 0, stagger = 3, style, wordStyle }) => {
+/** Scene envelope: fade and de-blur in, fade out. */
+export const Scene: React.FC<{ duration: number; children: React.ReactNode; out?: number }> = ({ duration, children, out = 10 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const inP = interpolate(frame, [0, 10], [0, 1], { ...clamp, easing: easeOut });
+  const outP = interpolate(frame, [duration - out, duration], [1, 0], clamp);
+  return <AbsoluteFill style={{ opacity: Math.min(inP, outP), filter: `blur(${(1 - inP) * 6}px)` }}>{children}</AbsoluteFill>;
+};
+
+const GLYPHS = '01#$%&*+<>/\\=?@ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+/** Characters decode from noise, left to right. */
+export const Decode: React.FC<{ text: string; at?: number; speed?: number; style?: React.CSSProperties }> = ({ text, at = 0, speed = 1.6, style }) => {
+  const frame = useCurrentFrame();
+  const t = (frame - at) * speed;
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'inherit', gap: '0 0.26em', ...style }}>
-      {text.split(' ').map((w, i) => {
-        const s = spring({ frame: frame - delay - i * stagger, fps, config: { damping: 15, mass: 0.7 } });
-        return (
-          <span key={i} style={{ display: 'inline-block', overflow: 'hidden', paddingBottom: '0.08em', marginBottom: '-0.08em' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                transform: `translateY(${(1 - s) * 105}%) rotate(${(1 - s) * 6}deg)`,
-                ...wordStyle?.(i),
-              }}
-            >
-              {w}
-            </span>
-          </span>
-        );
+    <span style={{ whiteSpace: 'pre', ...style }}>
+      {text.split('').map((ch, i) => {
+        if (ch === ' ') return ' ';
+        if (t < i - 6) return <span key={i} style={{ opacity: 0 }}>{ch}</span>;
+        if (t < i) return <span key={i} style={{ opacity: 0.55 }}>{GLYPHS[Math.floor(random(`${text}${i}${frame}`) * GLYPHS.length)]}</span>;
+        return <span key={i}>{ch}</span>;
       })}
-    </div>
-  );
-};
-
-/** Characters type in like a terminal. */
-export const Typed: React.FC<{ text: string; delay?: number; cps?: number; style?: React.CSSProperties; caret?: boolean }> = ({
-  text,
-  delay = 0,
-  cps = 1.4,
-  style,
-  caret = true,
-}) => {
-  const frame = useCurrentFrame();
-  const n = Math.max(0, Math.min(text.length, Math.floor((frame - delay) * cps)));
-  const blink = Math.floor(frame / 8) % 2 === 0;
-  return (
-    <span style={{ fontFamily: MONO, ...style }}>
-      {text.slice(0, n)}
-      {caret && frame >= delay && <span style={{ opacity: blink ? 1 : 0 }}>▍</span>}
     </span>
   );
 };
 
-export const Chip: React.FC<{ children: React.ReactNode; dark?: boolean; style?: React.CSSProperties }> = ({ children, dark, style }) => (
+/** Terminal typing with a block caret. */
+export const Typed: React.FC<{ text: string; at?: number; cps?: number; style?: React.CSSProperties; caret?: boolean }> = ({ text, at = 0, cps = 1.5, style, caret = true }) => {
+  const frame = useCurrentFrame();
+  const n = Math.max(0, Math.min(text.length, Math.floor((frame - at) * cps)));
+  const blink = Math.floor(frame / 8) % 2 === 0;
+  return (
+    <span style={{ fontFamily: MONO, whiteSpace: 'pre', ...style }}>
+      {text.slice(0, n)}
+      {caret && frame >= at && <span style={{ opacity: blink ? 0.9 : 0 }}>▌</span>}
+    </span>
+  );
+};
+
+/** Rises in from below on a fade. */
+export const FadeUp: React.FC<{ at: number; children: React.ReactNode; style?: React.CSSProperties; dist?: number }> = ({ at, children, style, dist = 24 }) => {
+  const p = useProgress(at, 14);
+  return <div style={{ opacity: p, transform: `translateY(${(1 - p) * dist}px)`, ...style }}>{children}</div>;
+};
+
+/** Portal's surface card: hairline border, lit from the top left. */
+export const Panel: React.FC<{ children?: React.ReactNode; style?: React.CSSProperties; accent?: string; glow?: number }> = ({ children, style, accent, glow = 0 }) => (
+  <div
+    style={{
+      position: 'relative',
+      background: `linear-gradient(160deg, ${C.raised}, ${C.surface} 60%)`,
+      border: `1px solid ${C.line}`,
+      borderRadius: 20,
+      boxShadow: `inset 1px 1px 0 rgba(255,255,255,0.06)${accent ? `, 0 0 ${30 + glow * 30}px -6px ${accent}${glow ? '88' : '33'}` : ''}`,
+      ...style,
+    }}
+  >
+    {children}
+  </div>
+);
+
+export const Pill: React.FC<{ children: React.ReactNode; color?: string; solid?: boolean; style?: React.CSSProperties }> = ({ children, color = C.muted, solid, style }) => (
   <span
     style={{
       fontFamily: MONO,
-      fontSize: 22,
-      letterSpacing: '0.12em',
+      fontSize: 20,
+      letterSpacing: '0.14em',
       textTransform: 'uppercase',
-      padding: '8px 18px',
+      padding: '7px 16px',
       borderRadius: 999,
-      border: `2px solid ${C.ink}`,
-      background: dark ? C.ink : 'rgba(255,255,255,0.45)',
-      color: dark ? C.paper : C.ink,
-      display: 'inline-block',
+      border: `1px solid ${solid ? color : `${color}66`}`,
+      background: solid ? color : `${color}12`,
+      color: solid ? C.bg : color,
       whiteSpace: 'nowrap',
+      display: 'inline-block',
       ...style,
     }}
   >
@@ -140,58 +159,116 @@ export const Chip: React.FC<{ children: React.ReactNode; dark?: boolean; style?:
   </span>
 );
 
-/** Ink card with the site's hard offset shadow. */
-export const Card: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({ children, style }) => (
-  <div
-    style={{
-      background: C.card,
-      border: `3px solid ${C.ink}`,
-      borderRadius: 28,
-      boxShadow: `10px 10px 0 ${C.ink}`,
-      ...style,
-    }}
-  >
-    {children}
-  </div>
-);
-
-/** Scene envelope: scale-in on entry, punch-out on exit. */
-export const Scene: React.FC<{ duration: number; children: React.ReactNode; out?: number }> = ({ duration, children, out = 8 }) => {
-  const frame = useCurrentFrame();
-  const enter = interpolate(frame, [0, 10], [1.04, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
-  const exit = interpolate(frame, [duration - out, duration], [1, 0.94], { ...clamp, easing: Easing.in(Easing.cubic) });
-  const opacity = interpolate(frame, [duration - out, duration], [1, 0], clamp);
-  return <AbsoluteFill style={{ transform: `scale(${enter * exit})`, opacity }}>{children}</AbsoluteFill>;
-};
-
-/** Ink bar sweeping across the cut, on the downbeat. */
-export const Wipe: React.FC = () => {
-  const frame = useCurrentFrame();
-  const x = interpolate(frame, [0, 14], [-120, 120], { ...clamp, easing: Easing.inOut(Easing.cubic) });
-  if (frame > 14) return null;
+/** "01 · LEGACY" style kicker with a drawn rule. */
+export const Kicker: React.FC<{ children: React.ReactNode; color?: string; at?: number }> = ({ children, color = C.azure, at = 0 }) => {
+  const p = useProgress(at, 16);
   return (
-    <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: '-20%',
-          bottom: '-20%',
-          width: '60%',
-          left: `${20 + x}%`,
-          background: C.ink,
-          transform: 'skewX(-14deg)',
-        }}
-      />
-    </AbsoluteFill>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 18, opacity: p }}>
+      <div style={{ width: 70 * p, height: 2, background: color, boxShadow: `0 0 12px ${color}` }} />
+      <span style={{ fontFamily: MONO, fontSize: 24, letterSpacing: '0.3em', color, textTransform: 'uppercase' }}>{children}</span>
+    </div>
   );
 };
 
-export const H: React.FC<{ size: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ size, children, style }) => (
-  <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: size, lineHeight: 1.02, color: C.ink, letterSpacing: '0.01em', ...style }}>
-    {children}
-  </div>
+export const Title: React.FC<{ size?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ size = 92, children, style }) => (
+  <div style={{ fontFamily: HEAD, fontWeight: 700, fontSize: size, lineHeight: 1.08, color: C.fg, letterSpacing: '-0.01em', ...style }}>{children}</div>
 );
 
-export const P: React.FC<{ size?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ size = 34, children, style }) => (
-  <div style={{ fontFamily: BODY, fontSize: size, lineHeight: 1.4, color: C.ink70, ...style }}>{children}</div>
+export const Body: React.FC<{ size?: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ size = 32, children, style }) => (
+  <div style={{ fontFamily: MONO, fontSize: size, lineHeight: 1.5, color: C.muted, ...style }}>{children}</div>
 );
+
+/** A stroke that draws itself, with a neon glow. Uses pathLength so no measuring is needed. */
+export const Neon: React.FC<{ d: string; color: string; progress: number; width?: number; dash?: string; opacity?: number }> = ({ d, color, progress, width = 3, dash, opacity = 1 }) => (
+  <g opacity={opacity}>
+    <path d={d} fill="none" stroke={color} strokeWidth={width * 4} strokeOpacity={0.12} pathLength={1} strokeDasharray="1" strokeDashoffset={1 - progress} strokeLinecap="round" />
+    <path
+      d={d}
+      fill="none"
+      stroke={color}
+      strokeWidth={width}
+      pathLength={dash ? undefined : 1}
+      strokeDasharray={dash ?? '1'}
+      strokeDashoffset={dash ? undefined : 1 - progress}
+      strokeLinecap="round"
+      style={{ filter: `drop-shadow(0 0 6px ${color})` }}
+    />
+  </g>
+);
+
+/** The yin-yang mark from openswap-bw.svg, in fill or neon-outline form. */
+export const Logo: React.FC<{ size: number; rotate?: number; outline?: number; color?: string }> = ({ size, rotate = 0, outline, color = C.fg }) => {
+  const fillO = outline === undefined ? 1 : interpolate(outline, [0.7, 1], [0, 1], clamp);
+  const draw = outline === undefined ? 1 : Math.min(1, outline / 0.75);
+  const yin = 'M 479.5 12 A 467.5 467.5 0 0 1 479.5 947 L 479.5 935.8 A 228.3 228.3 0 0 1 479.5 479.2 L 479.5 479.8 A 228.3 228.3 0 0 0 479.5 23.2 L 479.5 12 Z';
+  return (
+    <svg width={size} height={size} viewBox="-20 -20 1000 1000" style={{ transform: `rotate(${rotate}deg)`, overflow: 'visible' }}>
+      <g opacity={fillO}>
+        <circle cx="479.5" cy="479.5" r="467.5" fill={color} />
+        <path fill={C.bg} d={yin} />
+        <circle cx="479.5" cy="251.5" r="59.75" fill={C.bg} />
+        <circle cx="479.5" cy="707.5" r="59.75" fill={color} />
+      </g>
+      {outline !== undefined && (
+        <g style={{ filter: `drop-shadow(0 0 14px ${C.azure})` }} opacity={1 - fillO * 0.6}>
+          <circle cx="479.5" cy="479.5" r="467.5" fill="none" stroke={C.azure} strokeWidth={10} pathLength={1} strokeDasharray="1" strokeDashoffset={1 - draw} />
+          <path d={yin} fill="none" stroke={C.azure} strokeWidth={10} pathLength={1} strokeDasharray="1" strokeDashoffset={1 - draw} />
+        </g>
+      )}
+    </svg>
+  );
+};
+
+/** Tor onion glyph. */
+export const Onion: React.FC<{ size: number; color?: string }> = ({ size, color = C.violet }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <g fill="none" stroke={color} strokeWidth={5}>
+      <ellipse cx={50} cy={58} rx={36} ry={36} />
+      <ellipse cx={50} cy={58} rx={24} ry={26} />
+      <ellipse cx={50} cy={58} rx={12} ry={16} />
+      <path d="M50 22 C 50 12, 60 6, 66 4" strokeLinecap="round" />
+    </g>
+  </svg>
+);
+
+type Tok = { t: string; c?: string };
+/** A script listing that types in token by token; `hl` lines glow in `hlColor`. */
+export const Code: React.FC<{ lines: Tok[][]; at?: number; perLine?: number; size?: number; hl?: number[]; hlColor?: string }> = ({ lines, at = 0, perLine = 4, size = 26, hl = [], hlColor = C.azure }) => {
+  const frame = useCurrentFrame();
+  return (
+    <div style={{ fontFamily: MONO, fontSize: size, lineHeight: 1.55 }}>
+      {lines.map((line, i) => {
+        const on = frame >= at + i * perLine;
+        const lit = hl.includes(i);
+        return (
+          <div
+            key={i}
+            style={{
+              opacity: on ? 1 : 0,
+              transform: `translateX(${on ? 0 : -10}px)`,
+              display: 'flex',
+              gap: 14,
+              background: lit ? `${hlColor}14` : 'transparent',
+              borderLeft: `3px solid ${lit ? hlColor : 'transparent'}`,
+              paddingLeft: 14,
+            }}
+          >
+            <span style={{ color: C.subtle, width: 34, textAlign: 'right' }}>{String(i + 1).padStart(2, '0')}</span>
+            <span>
+              {line.map((tok, k) => (
+                <span key={k} style={{ color: tok.c ?? C.fg }}>
+                  {tok.t}
+                </span>
+              ))}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+export const op = (t: string): Tok => ({ t, c: C.violet });
+export const arg = (t: string): Tok => ({ t, c: C.amber });
+export const key = (t: string): Tok => ({ t, c: C.azure });
+export const sp: Tok = { t: ' ' };

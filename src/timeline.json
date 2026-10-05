@@ -4,30 +4,69 @@
   "width": 1920,
   "height": 1080,
   "sections": {
-    "intro": [0, 4],
-    "what": [4, 9],
-    "taproot": [9, 11],
-    "legacy": [11, 13],
-    "payswap": [13, 15],
-    "portalTitle": [15, 16],
-    "portalShots": [16, 23],
-    "portalCta": [23, 25],
-    "oneMore": [25, 26],
-    "reel": [26, 28],
-    "soon": [28, 29],
-    "end": [29, 35]
-  },
-  "reel": {
-    "words": ["LIGHTNING", "SWAPS"],
-    "leverFrame": 4,
-    "spinStart": 12,
-    "firstLock": 42,
-    "lockEvery": 3.75
-  },
-  "lightningTrack": {
-    "enabled": false,
-    "file": "audio/lightning.mp3",
-    "peakAtSec": 0,
-    "volume": 0.9
+    "intro": [
+      0,
+      4
+    ],
+    "route": [
+      4,
+      12
+    ],
+    "legacy": [
+      12,
+      19
+    ],
+    "better": [
+      19,
+      21
+    ],
+    "taproot": [
+      21,
+      29
+    ],
+    "payswap": [
+      29,
+      36
+    ],
+    "market": [
+      36,
+      47
+    ],
+    "portal": [
+      47,
+      49
+    ],
+    "deploy": [
+      49,
+      54
+    ],
+    "backend": [
+      54,
+      59
+    ],
+    "wallet": [
+      59,
+      66
+    ],
+    "router": [
+      66,
+      74
+    ],
+    "cta": [
+      74,
+      77
+    ],
+    "thanks": [
+      77,
+      81
+    ],
+    "lightning": [
+      81,
+      84
+    ],
+    "outro": [
+      84,
+      88
+    ]
   }
 }
