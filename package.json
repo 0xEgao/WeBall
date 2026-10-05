@@ -4,10 +4,14 @@
   "version": "0.2.3",
   "type": "module",
   "scripts": {
-    "music": "node scripts/make-music.mjs",
-    "studio": "npm run music && remotion studio src/index.ts",
+    "music": "node scripts/make-music.mjs && node scripts/make-music.mjs --ambient",
+    "narration": "node scripts/make-narration.mjs",
+    "assets": "npm run music && npm run narration",
+    "studio": "npm run assets && remotion studio src/index.ts",
     "render": "npm run music && remotion render src/index.ts OpenSwapMaster out/openswap-master-1080p.mp4 --codec h264 --crf 16",
     "render:4k": "npm run music && remotion render src/index.ts OpenSwapMaster out/openswap-master-4k.mp4 --scale=2 --codec h264 --crf 16",
+    "render:narrated": "npm run assets && remotion render src/index.ts OpenSwapNarrated out/openswap-narrated-1080p.mp4 --codec h264 --crf 16",
+    "render:narrated:4k": "npm run assets && remotion render src/index.ts OpenSwapNarrated out/openswap-narrated-4k.mp4 --scale=2 --codec h264 --crf 16",
     "cut": "npm run music && remotion render src/index.ts"
   },
   "dependencies": {

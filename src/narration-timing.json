@@ -1,0 +1,98 @@
+{
+  "intro": {
+    "startSec": 0.5,
+    "durSec": 5.449342,
+    "rate": 158,
+    "fits": true
+  },
+  "route": {
+    "startSec": 8.5,
+    "durSec": 9.899229,
+    "rate": 158,
+    "fits": true
+  },
+  "legacy": {
+    "startSec": 24.5,
+    "durSec": 8.584127,
+    "rate": 158,
+    "fits": true
+  },
+  "better": {
+    "startSec": 38.5,
+    "durSec": 1.269751,
+    "rate": 158,
+    "fits": true
+  },
+  "taproot": {
+    "startSec": 42.5,
+    "durSec": 9.88,
+    "rate": 158,
+    "fits": true
+  },
+  "payswap": {
+    "startSec": 58.5,
+    "durSec": 7.694558,
+    "rate": 158,
+    "fits": true
+  },
+  "market": {
+    "startSec": 72.5,
+    "durSec": 13.764898,
+    "rate": 158,
+    "fits": true
+  },
+  "portal": {
+    "startSec": 94.5,
+    "durSec": 0.828571,
+    "rate": 158,
+    "fits": true
+  },
+  "deploy": {
+    "startSec": 98.5,
+    "durSec": 5.386893,
+    "rate": 158,
+    "fits": true
+  },
+  "backend": {
+    "startSec": 108.5,
+    "durSec": 7.113741,
+    "rate": 158,
+    "fits": true
+  },
+  "wallet": {
+    "startSec": 118.5,
+    "durSec": 8.599592,
+    "rate": 158,
+    "fits": true
+  },
+  "router": {
+    "startSec": 134.5,
+    "durSec": 9.759456,
+    "rate": 158,
+    "fits": true
+  },
+  "cta": {
+    "startSec": 152.5,
+    "durSec": 2.387483,
+    "rate": 158,
+    "fits": true
+  },
+  "thanks": {
+    "startSec": 158.5,
+    "durSec": 5.229342,
+    "rate": 158,
+    "fits": true
+  },
+  "lightning": {
+    "startSec": 166.5,
+    "durSec": 2.922313,
+    "rate": 158,
+    "fits": true
+  },
+  "outro": {
+    "startSec": 172.5,
+    "durSec": 4.189252,
+    "rate": 158,
+    "fits": true
+  }
+}

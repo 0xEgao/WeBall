@@ -1,0 +1,24 @@
+{
+  "voice": "Samantha",
+  "rate": 158,
+  "pauseMs": 400,
+  "leadInSec": 0.5,
+  "lines": {
+    "intro": "Bitcoin is public. Every payment leaves a trail. OpenSwap helps you leave a lighter one.",
+    "route": "Here's how a swap works. Your coins travel through a circle of routers, and come back as different coins, with no link to where they started. Every message travels over Tor.",
+    "legacy": "Legacy is the original atomic swap. Both sides lock their coins in a shared contract. Either the swap completes, or everyone gets a refund.",
+    "better": "But we can do better.",
+    "taproot": "Taproot swaps look like ordinary payments on chain. The backup scripts stay hidden unless they're needed, and claims take about a quarter less space, so you pay lower fees.",
+    "payswap": "PaySwap lets you swap and pay in one step. The coins go straight to the person you're paying, and they receive exactly the amount you set.",
+    "market": "Routers live in an open marketplace. They announce themselves on Nostr, so there's no central server to shut down. Each router locks up a fidelity bond to stay honest, cheaters get banned, and your wallet picks the cheapest routers first.",
+    "portal": "Meet Portal.",
+    "deploy": "Portal runs as a desktop app, or on a small server at home that you can reach from any browser.",
+    "backend": "It reads the chain through Electrum, or your own Bitcoin node. For extra privacy, you can connect to Electrum over Tor.",
+    "wallet": "In the wallet, choose an amount and the number of routers. You see the fees before you start. Then the swap runs through the circle, and your coins come home.",
+    "router": "Running a router is how you earn. Lock a bond, join the market, and every swap you route pays you a fee. It runs quietly in the background... earning while you sleep.",
+    "cta": "Download Portal at open swap dot live.",
+    "thanks": "OpenSwap is built in the open, by a small team and many contributors. Thank you.",
+    "lightning": "And next... Lightning swaps are on the way.",
+    "outro": "Privacy is necessary for an open society in the electronic age."
+  }
+}

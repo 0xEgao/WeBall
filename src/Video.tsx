@@ -1,9 +1,11 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion';
-import { SectionName, sectionFrames, T, TOTAL } from './theme';
+import narration from './narration-timing.json';
+import { FPS, SectionName, sectionFrames, T, TOTAL } from './theme';
 import { Better, Intro, Legacy, PaySwap, Route, Taproot } from './scenes/Story';
 import { Market } from './scenes/Market';
-import { Backend, Cta, Deploy, PortalIntro, RouterUI, WalletUI } from './scenes/Portal';
+import { Backend, Cta, Deploy, PortalIntro } from './scenes/Portal';
+import { RouterTour, WalletTour } from './scenes/Tours';
 import { Lightning, Outro, Thanks } from './scenes/End';
 
 type SceneC = React.FC<{ duration: number }>;
@@ -20,15 +22,28 @@ export const SCENES: Record<SectionName, SceneC> = {
   portal: PortalIntro,
   deploy: Deploy,
   backend: Backend,
-  wallet: WalletUI,
-  router: RouterUI,
+  wallet: WalletTour,
+  router: RouterTour,
   cta: Cta,
   thanks: Thanks,
   lightning: Lightning,
   outro: Outro,
 };
 
-export const OpenSwapVideo: React.FC = () => (
+type Clip = { startSec: number; durSec: number };
+const CLIPS = narration as Record<string, Clip>;
+
+/** Narrated cut: music only fills the gaps, silent whenever the narrator speaks. */
+const gapVolume = (f: number) => {
+  const t = f / FPS;
+  const speaking = Object.values(CLIPS).reduce((acc, c) => {
+    const inside = Math.min(t - (c.startSec - 0.4), c.startSec + c.durSec + 0.5 - t);
+    return Math.max(acc, Math.min(1, Math.max(0, inside / 0.4)));
+  }, 0);
+  return 0.75 * (1 - speaking);
+};
+
+export const OpenSwapVideo: React.FC<{ narrated?: boolean }> = ({ narrated = false }) => (
   <AbsoluteFill style={{ background: '#000' }}>
     {(Object.keys(SCENES) as SectionName[]).map((name) => {
       const { from, duration } = sectionFrames(name);
@@ -39,7 +54,13 @@ export const OpenSwapVideo: React.FC = () => (
         </Sequence>
       );
     })}
-    <Audio src={staticFile('audio/score.wav')} />
+    {narrated ? <Audio src={staticFile('audio/score-ambient.wav')} volume={gapVolume} /> : <Audio src={staticFile('audio/score.wav')} />}
+    {narrated &&
+      Object.entries(CLIPS).map(([scene, c]) => (
+        <Sequence key={scene} from={Math.round(c.startSec * FPS)} durationInFrames={Math.ceil((c.durSec + 0.2) * FPS)} name={`voice: ${scene}`}>
+          <Audio src={staticFile(`narration/${scene}.wav`)} />
+        </Sequence>
+      ))}
   </AbsoluteFill>
 );
 

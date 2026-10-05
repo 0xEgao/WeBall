@@ -1,5 +1,5 @@
 // Synthesizes the score from the shared timeline, so every hit lands on a cut.
-// Output: public/audio/score.wav (44.1 kHz, 16-bit stereo).
+// Output: public/audio/score.wav, or score-ambient.wav with --ambient (44.1 kHz, 16-bit stereo).
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const T = JSON.parse(readFileSync(join(root, 'src/timeline.json'), 'utf8'));
 
+const AMBIENT = process.argv.includes('--ambient');
 const SR = 44100;
 const BEAT = 60 / T.bpm;
 const BAR = BEAT * 4;
@@ -245,6 +246,30 @@ const ENERGY = {
   portal: 2, deploy: 2, backend: 2, wallet: 2, router: 3, cta: 2, thanks: 1, lightning: 1, outro: 1,
 };
 
+// ---- Ambient bed for the narrated cut: warm, open, no drums ---------------
+const AIR = [
+  { root: 41, chord: [57, 60, 64, 65] }, // Fmaj7
+  { root: 45, chord: [57, 60, 64, 67] }, // Am7
+  { root: 48, chord: [55, 59, 60, 64] }, // Cmaj7
+  { root: 43, chord: [55, 59, 62, 67] }, // G
+];
+function ambientBed() {
+  for (let b = 0; b < totalBars; b++) {
+    const t0 = barT(b);
+    const sec = sectionOf(b);
+    const ch = AIR[b % 4];
+    const fadeK = sec === 'outro' ? Math.max(0, 1 - (b - S.outro[0]) / (S.outro[1] - S.outro[0])) : 1;
+    pad(t0, BAR + 0.15, ch.chord.map(hz), 0.85 * fadeK, 0.02);
+    sub(t0, BAR, hz(ch.root - 12), 0.45 * fadeK);
+    // Soft plucks, a few per bar, high and quiet.
+    [0, 3, 5, 6].forEach((step, k) => pluck(t0 + step * (BAR / 8), hz(ch.chord[k % 4] + 12), 0.35 * fadeK, k % 2 ? 0.35 : -0.35));
+    if (sectionOf(b - 1) !== sec) shimmer(t0, 0.35 * fadeK, 2.6);
+  }
+}
+
+if (AMBIENT) {
+  ambientBed();
+} else {
 // ---- Arrangement ------------------------------------------------------------
 for (let b = 0; b < totalBars; b++) {
   const sec = sectionOf(b);
@@ -306,6 +331,8 @@ thunder(barT(S.lightning[0]) + BEAT, 0.45, 4);
 shimmer(barT(S.outro[0]), 0.5);
 impact(barT(S.outro[1]) - BAR * 0.02, 0); // keeps the tail allocated
 
+}
+
 // ---- Sidechain duck, master, write -----------------------------------------
 const duck = new Float32Array(N).fill(1);
 for (const kt of kickTimes) {
@@ -333,5 +360,6 @@ for (let i = 0; i < N; i++) {
   buf.writeInt16LE(Math.round(R[i] * norm * 32767), 46 + i * 4);
 }
 mkdirSync(join(root, 'public/audio'), { recursive: true });
-writeFileSync(join(root, 'public/audio/score.wav'), buf);
-console.log(`score.wav: ${DUR.toFixed(1)}s, ${totalBars} bars @ ${T.bpm} BPM`);
+const outName = AMBIENT ? 'score-ambient.wav' : 'score.wav';
+writeFileSync(join(root, 'public/audio', outName), buf);
+console.log(`${outName}: ${DUR.toFixed(1)}s, ${totalBars} bars @ ${T.bpm} BPM`);
