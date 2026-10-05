@@ -1,0 +1,24 @@
+{
+  "name": "openswap-motion",
+  "private": true,
+  "version": "0.2.3",
+  "type": "module",
+  "scripts": {
+    "music": "node scripts/make-music.mjs",
+    "studio": "npm run music && remotion studio src/index.ts",
+    "render": "npm run music && remotion render src/index.ts OpenSwapV023 out/openswap-v0.2.3.mp4 --codec h264 --crf 16",
+    "render:4k": "npm run music && remotion render src/index.ts OpenSwapV023 out/openswap-v0.2.3-4k.mp4 --scale=2 --codec h264 --crf 16",
+    "still": "remotion still src/index.ts OpenSwapV023"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.532",
+    "@remotion/google-fonts": "^4.0.532",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.532"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "fps": 30,
+  "bpm": 120,
+  "width": 1920,
+  "height": 1080,
+  "sections": {
+    "intro": [0, 4],
+    "what": [4, 9],
+    "taproot": [9, 11],
+    "legacy": [11, 13],
+    "payswap": [13, 15],
+    "portalTitle": [15, 16],
+    "portalShots": [16, 23],
+    "portalCta": [23, 25],
+    "oneMore": [25, 26],
+    "reel": [26, 28],
+    "soon": [28, 29],
+    "end": [29, 35]
+  },
+  "reel": {
+    "words": ["LIGHTNING", "SWAPS"],
+    "leverFrame": 4,
+    "spinStart": 12,
+    "firstLock": 42,
+    "lockEvery": 3.75
+  },
+  "lightningTrack": {
+    "enabled": false,
+    "file": "audio/lightning.mp3",
+    "peakAtSec": 0,
+    "volume": 0.9
+  }
+}
